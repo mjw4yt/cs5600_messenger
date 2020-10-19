@@ -1,3 +1,4 @@
+#we use these libraries to help with socket programming
 import socket
 import threading
 
@@ -12,6 +13,7 @@ MAX_CONNECTIONS = 5
 def client_mgr(conn, addr):
     while True:
         try:
+            #the message has a new connection
             message = conn.recv(1024)
         except ConnectionResetError:
             # Connection failed, possibly due to a non-expected termination on client side
@@ -38,10 +40,12 @@ def client_mgr(conn, addr):
             # remove client from the list of connected clients
             pass
 
-
+#this function deals with specific commands (control messages)
 def control_msg_handler(conn, message):
+    #quit command
     if message == "/quit":
         print(conn, " disconnecting")
+        #remove a
         if conn in active_connections:
             active_connections.remove(conn)
         conn.shutdown(socket.SHUT_RDWR)
@@ -51,7 +55,7 @@ def control_msg_handler(conn, message):
     # i.e. /nickname, /msg (private message), /exit or /quit, etc.
     pass
 
-
+#this function deals with specifically non-command messages
 def msg_handler(conn, message):
     # message is not control message
     for t in active_connections:
@@ -69,11 +73,16 @@ def msg_handler(conn, message):
 
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    #use the host and port to make the server visible to clients
     s.bind((HOST, PORT))
+    #actively look for connections
     s.listen(MAX_CONNECTIONS)
+    #create a list of connections
     active_connections = []
     while True:
         conn, addr = s.accept()
+        #create a new thread for each connection
         newThread = threading.Thread(target=client_mgr, args=(conn, addr), name=addr)
+        #add the message to the active connections
         active_connections.append(conn)
         newThread.start()
