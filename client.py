@@ -59,6 +59,33 @@ def send_handler(s, serverEncryptor: PKCS1OAEP_Cipher, entryObject: tkinter.Entr
         msg = serverEncryptor.encrypt(msg)
         s.send(msg)
 
+"""
+def send_handler(s, serverEncryptor: PKCS1OAEP_Cipher, entryObject: tkinter.Entry, nickname):
+    msg = entryObject.get()
+    entryObject.delete(0, 'end')
+    if len(msg) == 0:
+        return
+    if msg.startswith("/"):
+        if msg in ["/quit", "/exit"]:
+            msgList = [True, "/quit"]
+            msgDump = pickle.dumps(msgList)
+            formattedMsg = serverEncryptor.encrypt(msgDump)
+            s.send(formattedMsg)
+            s.shutdown(socket.SHUT_RDWR)
+            s.close()
+            quit(0)
+        else:
+            # sends non-quit command message, continues execution
+            complete_msg = nickname + ": " + msg
+            msg = pickle.dumps([True, complete_msg])
+            msg = serverEncryptor.encrypt(msg)
+            s.send(msg)
+    else:
+        complete_msg = nickname + ": " + msg
+        msg = pickle.dumps([False, complete_msg])
+        msg = serverEncryptor.encrypt(msg)
+        s.send(msg)
+"""        
 
 def keyExchange(s, clientRSAKeypair, clientEncryptor):
     serverPublicKey = RSA.importKey(s.recv(4096))
@@ -130,17 +157,48 @@ def main():
 
     # message sending
     inputFrame = tkinter.Frame(masterWindow)
+    inputFrame.configure(bg="#0e4a40")
     inputFrame.grid(row=1, column=0, sticky=tkinter.E + tkinter.W + tkinter.N + tkinter.S)
+    
+    commandFrame = tkinter.Frame(masterWindow)
+    commandFrame.configure(bg='#0e4a40')
+    commandFrame.grid(row=2, column=0, sticky=tkinter.E + tkinter.W + tkinter.N + tkinter.S)
+    
     message_input = tkinter.Entry(inputFrame, width=50, relief="flat", fg="#242e2c", bg="#9ab8b3", font=("sans-serif", "11"), selectbackground="#093830")
+    nickname_input = tkinter.Entry(commandFrame, width=50, relief="flat", fg="#242e2c", bg="#9ab8b3",
+                                  font=("sans-serif", "11"), selectbackground="#093830")
+    nickname_notice = tkinter.Label(commandFrame, relief="flat", bg = "#0e4a40",
+                                  font=("sans-serif", "11", "bold"), text="Enter a nickname to display with your messages.")
 
+    """
+    message_button = tkinter.Button(inputFrame, text="Send", font=("Verdana", "12", "bold"), bg="#2e8274", fg="#9ab8b3", activebackground="#0e4a40",
+                                    activeforeground="#242e2c", relief="flat", overrelief="flat", bd=1,
+                                    command=lambda: send_handler(s, serverEncryptor, message_input,nickname_input.get()))
+    """
     message_button = tkinter.Button(inputFrame, text="Send", font=("Verdana", "12", "bold"), bg="#2e8274", fg="#9ab8b3", activebackground="#0e4a40",
                                     activeforeground="#242e2c", relief="flat", overrelief="flat", bd=1,
                                     command=lambda: send_handler(s, serverEncryptor, message_input))
+    
     message_input.grid(row=0, column=0, columnspan=2, padx=10, pady=10,
                        sticky=tkinter.E + tkinter.W + tkinter.N + tkinter.S)
     message_button.grid(row=0, column=2, padx=10, pady=10, sticky=tkinter.E + tkinter.W + tkinter.N + tkinter.S)
     msglist.config(yscrollcommand=scrollbar.set)
     scrollbar.config(command=msglist.yview)
+    
+    command_button = tkinter.Button(commandFrame, text="Log Off", font=("Verdana", "12", "bold"), bg="#2e8274", fg="#9ab8b3",
+                                    activebackground="#0e4a40",
+                                    activeforeground="#242e2c", relief="flat", overrelief="flat", bd=1,
+                                    command=lambda: send_handler(s, serverEncryptor, "/quit"))
+    """
+    command_button = tkinter.Button(commandFrame, text="Log Off", font=("Verdana", "12", "bold"), bg="#2e8274", fg="#9ab8b3",
+                                    activebackground="#0e4a40",
+                                    activeforeground="#242e2c", relief="flat", overrelief="flat", bd=1,
+                                    command=lambda: send_handler(s, serverEncryptor, "/quit",nickname_input.get())
+    """
+    nickname_notice.grid(row=0, column=0, padx=10, pady=10, sticky=tkinter.E + tkinter.W + tkinter.N + tkinter.S)
+    nickname_input.grid(row=0, column=1, padx=0, pady=10, sticky=tkinter.E + tkinter.W + tkinter.N + tkinter.S)                               
+    command_button.grid(row=0, column=2, padx=10, pady=10, sticky=tkinter.E + tkinter.W + tkinter.N + tkinter.S)
+    
 
     masterWindow.columnconfigure(0, weight=1)
     masterWindow.rowconfigure(0, weight=1)
@@ -150,8 +208,12 @@ def main():
 
     inputFrame.columnconfigure(0, weight=1)
     inputFrame.rowconfigure(0, weight=1)
+    
+    commandFrame.columnconfigure(0, weight=1)
+    commandFrame.rowconfigure(0, weight=1)
 
     masterWindow.bind(sequence='<Return>', func=lambda event=None: send_handler(s, serverEncryptor, message_input))
+    #masterWindow.bind(sequence='<Return>', func=lambda event=None: send_handler(s, serverEncryptor, message_input,nickname_input.get()))
     masterWindow.update()
     masterWindow.minsize(masterWindow.winfo_width(), masterWindow.winfo_height())
     HOST, PORT, PASSWORD, NICK = serverConfigParser()
